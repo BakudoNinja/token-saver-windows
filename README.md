@@ -1,8 +1,13 @@
 # Token saver
 
-**Use fewer tokens without making your coding agent work blind.**
+[![MIT License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Windows](https://img.shields.io/badge/platform-Windows-blue.svg)](#quick-install)
+[![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-5391FE.svg)](#quick-install)
+[![AI coding agents](https://img.shields.io/badge/agents-Codex%20%7C%20Claude%20%7C%20Cursor%20%7C%20Aider-111827.svg)](#what-gets-installed)
 
-Token saver builds compact project context, attaches itself to coding-agent workflows, and shows a small live usage monitor so you can see what is being used and what is being saved.
+**A lightweight Windows token saver for Codex, Claude Code, Cursor, Aider, and AI coding agents.**
+
+Token saver helps reduce AI coding token usage by generating compact project context, attaching itself to coding-agent workflows, and showing a small live monitor for local usage and savings estimates.
 
 ![Token saver preview](examples/token-saver-preview.svg)
 
@@ -11,6 +16,12 @@ Token saver builds compact project context, attaches itself to coding-agent work
 AI coding sessions often spend a lot of context on repeated repository scans, noisy command output, and files that are not relevant to the current task. Token saver gives agents a short, high-signal context package first, then lets them open specific source files only when needed.
 
 The goal is simple: keep the agent useful, reduce repeated token waste, and make the numbers visible.
+
+## Who It Helps
+
+- Developers using **Codex**, **Claude Code**, **Cursor**, or **Aider** on Windows.
+- People working in large repositories where agents repeatedly rescan the same files.
+- Anyone looking for lightweight **token optimization**, **context engineering**, or **AI coding agent cost reduction** without a heavy proxy setup.
 
 ## Highlights
 
