@@ -1,0 +1,91 @@
+<svg width="1160" height="660" viewBox="0 0 1160 660" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Token saver preview</title>
+  <desc id="desc">A GitHub README preview image showing a floating token activity chart, token saved totals, and supported AI coding agents.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1160" y2="660" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#eef6ff"/>
+      <stop offset="0.5" stop-color="#f8fbff"/>
+      <stop offset="1" stop-color="#eefdf5"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="190" y1="70" x2="940" y2="520" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#111827"/>
+      <stop offset="1" stop-color="#092018"/>
+    </linearGradient>
+    <linearGradient id="usage" x1="234" y1="138" x2="234" y2="396" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#38bdf8" stop-opacity="0.72"/>
+      <stop offset="1" stop-color="#38bdf8" stop-opacity="0.03"/>
+    </linearGradient>
+    <linearGradient id="saved" x1="234" y1="160" x2="234" y2="396" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#4ade80" stop-opacity="0.58"/>
+      <stop offset="1" stop-color="#4ade80" stop-opacity="0.03"/>
+    </linearGradient>
+    <filter id="shadow" x="150" y="32" width="860" height="584" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="24" stdDeviation="24" flood-color="#0f172a" flood-opacity="0.20"/>
+    </filter>
+  </defs>
+
+  <rect width="1160" height="660" fill="url(#bg)"/>
+  <circle cx="1042" cy="120" r="120" fill="#bfdbfe" opacity="0.24"/>
+  <circle cx="120" cy="560" r="160" fill="#bbf7d0" opacity="0.28"/>
+
+  <text x="90" y="100" fill="#0f172a" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="54" font-weight="800">Token saver</text>
+  <text x="92" y="142" fill="#475569" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="22">Context-aware token savings for Codex, Claude, Cursor, Aider, and other coding agents.</text>
+
+  <g filter="url(#shadow)">
+    <rect x="190" y="190" width="780" height="390" rx="20" fill="url(#panel)" opacity="0.94"/>
+    <rect x="190.5" y="190.5" width="779" height="389" rx="19.5" stroke="#93c5fd" stroke-opacity="0.28"/>
+
+    <text x="226" y="238" fill="#f8fafc" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="18" font-weight="700">Token activity · 15m</text>
+    <circle cx="842" cy="231" r="6" fill="#4ade80"/>
+    <text x="858" y="238" fill="#d1fae5" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="650">online</text>
+
+    <g opacity="0.34" stroke="#94a3b8" stroke-width="1">
+      <path d="M226 284H930"/>
+      <path d="M226 336H930"/>
+      <path d="M226 388H930"/>
+      <path d="M226 440H930"/>
+      <path d="M226 492H930"/>
+      <path d="M226 284V492"/>
+      <path d="M343 284V492"/>
+      <path d="M460 284V492"/>
+      <path d="M577 284V492"/>
+      <path d="M694 284V492"/>
+      <path d="M811 284V492"/>
+      <path d="M930 284V492"/>
+    </g>
+
+    <path d="M226 492L226 438L255 430L284 312L313 475L342 492L371 492L400 398L429 455L458 347L487 382L516 330L545 492L574 492L603 492L632 414L661 424L690 286L719 383L748 356L777 496L806 308L835 440L864 332L893 430L930 292L930 492Z" fill="url(#usage)"/>
+    <path d="M226 492L255 430L284 312L313 475L342 492L400 398L429 455L458 347L487 382L516 330L545 492L632 414L661 424L690 286L719 383L748 356L777 496L806 308L835 440L864 332L893 430L930 292" stroke="#38bdf8" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <path d="M226 492L226 492L255 492L284 492L313 492L342 492L371 492L400 492L429 492L458 492L487 492L516 492L545 492L574 492L603 492L632 468L661 492L690 492L719 396L748 492L777 492L806 492L835 462L864 492L893 492L930 420L930 492Z" fill="url(#saved)"/>
+    <path d="M226 492L632 468L661 492L719 396L748 492L835 462L864 492L930 420" stroke="#4ade80" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <rect x="190" y="518" width="780" height="62" rx="0" fill="#071813" opacity="0.92"/>
+    <circle cx="228" cy="548" r="5" fill="#38bdf8"/>
+    <text x="244" y="554" fill="#bfdbfe" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="15">usage total</text>
+    <text x="338" y="555" fill="#f8fafc" font-family="JetBrains Mono, Consolas, monospace" font-size="22" font-weight="700">1.84M</text>
+    <circle cx="470" cy="548" r="5" fill="#4ade80"/>
+    <text x="486" y="554" fill="#bbf7d0" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="15">saved total</text>
+    <text x="584" y="555" fill="#f8fafc" font-family="JetBrains Mono, Consolas, monospace" font-size="22" font-weight="700">312K</text>
+    <text x="740" y="554" fill="#cbd5e1" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="15">peak</text>
+    <text x="786" y="555" fill="#f8fafc" font-family="JetBrains Mono, Consolas, monospace" font-size="22" font-weight="700">92K/min</text>
+  </g>
+
+  <g>
+    <rect x="94" y="214" width="140" height="44" rx="22" fill="#ffffff" stroke="#dbeafe"/>
+    <text x="131" y="242" fill="#1e293b" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700">Codex</text>
+    <rect x="94" y="270" width="140" height="44" rx="22" fill="#ffffff" stroke="#dbeafe"/>
+    <text x="126" y="298" fill="#1e293b" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700">Claude</text>
+    <rect x="94" y="326" width="140" height="44" rx="22" fill="#ffffff" stroke="#dbeafe"/>
+    <text x="126" y="354" fill="#1e293b" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="700">Cursor</text>
+  </g>
+
+  <g>
+    <rect x="880" y="96" width="64" height="64" rx="16" fill="#ffffff" stroke="#dbeafe"/>
+    <path d="M902 128h24M914 116v24" stroke="#2563eb" stroke-width="4" stroke-linecap="round"/>
+    <rect x="958" y="96" width="64" height="64" rx="16" fill="#ffffff" stroke="#dcfce7"/>
+    <path d="M975 129l11 11l22 -28" stroke="#16a34a" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="1036" y="96" width="64" height="64" rx="16" fill="#ffffff" stroke="#e2e8f0"/>
+    <path d="M1052 128h32M1068 112v32" stroke="#0f172a" stroke-width="4" stroke-linecap="round"/>
+  </g>
+</svg>

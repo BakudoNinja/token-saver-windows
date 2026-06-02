@@ -1,0 +1,17 @@
+.codex/
+
+# Local Token saver adapter files generated for this checkout.
+CLAUDE.md
+TOKEN_SAVER.md
+.aider.token-saver.md
+.cursor/
+
+# Local secrets and usage snapshots.
+*.dpapi
+token-plan.json
+openai-admin-key*
+
+# Runtime logs and temporary files.
+*.log
+*.tmp
+*.bak
