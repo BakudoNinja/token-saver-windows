@@ -516,6 +516,9 @@ try {
     $autoOldCodex = Join-Path $autoOldProject ".codex"
     New-Item -ItemType Directory -Force -Path $autoCodexHome, $autoOldCodex | Out-Null
     "auto old project" | Set-Content -LiteralPath (Join-Path $autoOldProject "README.md") -Encoding UTF8
+    $preExistingClaudeText = "# Existing Claude rules`n`nKeep this project-specific instruction."
+    $preExistingClaudePath = Join-Path $autoOldProject "CLAUDE.md"
+    $preExistingClaudeText | Set-Content -LiteralPath $preExistingClaudePath -Encoding UTF8
     [PSCustomObject]@{
         projectPath = $autoOldProject
         outputTokens = 1200
@@ -590,6 +593,10 @@ try {
     if (@($autoAttachedRecord[0].agentRuleFiles).Count -lt 4 -or @($autoManifest.autoAttach.agentRuleFiles).Count -lt 1) {
         throw "auto-attach manifest should record global and project agent rule files"
     }
+    $claudeRuleRecord = @($autoAttachedRecord[0].agentRuleFiles | Where-Object { [string]$_.path -eq [System.IO.Path]::GetFullPath($preExistingClaudePath) } | Select-Object -First 1)
+    if ($claudeRuleRecord.Count -ne 1 -or -not [bool]$claudeRuleRecord[0].existed) {
+        throw "auto-attach manifest should remember pre-existing CLAUDE.md"
+    }
     $installedPaths = & (Join-Path $install.binPath "token-helper.cmd") paths -DataPath $data -Json | ConvertFrom-Json
     if ([string]$installedPaths.dataPath -ne [System.IO.Path]::GetFullPath($data)) {
         throw "installed token-helper.cmd paths returned wrong data path: $($installedPaths.dataPath)"
@@ -635,6 +642,13 @@ try {
     }
     if ([int]$uninstallAuto.removedAgentRuleFileCount -lt 4) {
         throw "uninstall should report removed multi-agent rule blocks"
+    }
+    if (-not (Test-Path -LiteralPath $preExistingClaudePath -PathType Leaf)) {
+        throw "uninstall should keep pre-existing CLAUDE.md"
+    }
+    $claudeAfterUninstall = Get-Content -LiteralPath $preExistingClaudePath -Raw
+    if ($claudeAfterUninstall -notmatch [regex]::Escape("Keep this project-specific instruction.") -or $claudeAfterUninstall -match [regex]::Escape("Token Saver Auto Attach")) {
+        throw "uninstall should preserve user CLAUDE.md content while removing Token Saver block"
     }
     if (-not (Test-Path -LiteralPath (Join-Path $autoOldCodex "stats.json") -PathType Leaf)) {
         throw "uninstall should not remove pre-existing project stats.json"
