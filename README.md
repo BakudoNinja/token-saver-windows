@@ -178,6 +178,12 @@ It covers token accounting, adapter behavior, context generation, regression tes
 
 ## Development Checks
 
+Run the full release gate:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\test-token-saver-release.ps1 -CloseExistingPanel
+```
+
 Run the MVP smoke test:
 
 ```powershell

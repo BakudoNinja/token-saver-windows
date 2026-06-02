@@ -10,6 +10,12 @@ $ErrorActionPreference = "Stop"
 $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 . (Join-Path $scriptRoot "token-helper-core.ps1")
 
+$mutexCreated = $false
+$script:panelMutex = [System.Threading.Mutex]::new($true, "Global\TokenUsageHelperPanel", [ref]$mutexCreated)
+if (-not $mutexCreated) {
+    return
+}
+
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 Add-Type -ReferencedAssemblies @("System.Windows.Forms", "System.Drawing") -TypeDefinition @"
@@ -77,12 +83,6 @@ public class TuhClickThroughForm : Form
     }
 }
 "@
-
-$mutexCreated = $false
-$script:panelMutex = [System.Threading.Mutex]::new($true, "Global\TokenUsageHelperPanel", [ref]$mutexCreated)
-if (-not $mutexCreated) {
-    return
-}
 
 $ChartMinutes = 15
 $ChartSlotSeconds = 30

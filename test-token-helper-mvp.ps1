@@ -69,6 +69,22 @@ try {
             throw "install.ps1 should copy agent installer $agentInstallerName"
         }
     }
+    if (-not (Test-Path -LiteralPath (Join-Path $scriptRoot "test-token-saver-release.ps1") -PathType Leaf)) {
+        throw "missing release gate test-token-saver-release.ps1"
+    }
+    if ($readmeText -notmatch [regex]::Escape("test-token-saver-release.ps1")) {
+        throw "README should document the full release gate"
+    }
+    foreach ($panelResetGuard in @("function Invoke-TuhPanelReset", "Clear-TuhRefreshProcess -Kill `$true", "lastResetAtUtc", "settingsResetApplied")) {
+        if ($panelText -notmatch [regex]::Escape($panelResetGuard)) {
+            throw "panel reset should be immediate and race-safe: $panelResetGuard"
+        }
+    }
+    $mutexIndex = $panelText.IndexOf('Global\TokenUsageHelperPanel')
+    $formsAddTypeIndex = $panelText.IndexOf('Add-Type -AssemblyName System.Windows.Forms')
+    if ($mutexIndex -lt 0 -or $formsAddTypeIndex -lt 0 -or $mutexIndex -gt $formsAddTypeIndex) {
+        throw "panel mutex should be acquired before WinForms loading so duplicate launches exit quickly"
+    }
     if ($installText -notmatch [regex]::Escape("Token saver.lnk")) {
         throw "install shortcut should be named Token saver.lnk"
     }

@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Full release gate script: `test-token-saver-release.ps1`.
+- MVP guards for immediate, race-safe panel reset behavior.
+
 ## v0.1.0 - 2026-06-02
 
 Initial lightweight Windows release.
