@@ -400,6 +400,35 @@ try {
         throw "expected context-only confidence, got $($contextResult.metrics.confidence)"
     }
 
+    & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $scriptRoot "token-helper.ps1") reset -DataPath $data -Json | Out-Null
+    $transientProject = Join-Path $work "transient-missing-project"
+    $transientLogs = Join-Path $transientProject "logs"
+    New-Item -ItemType Directory -Force -Path $transientLogs | Out-Null
+    $transientLogFile = Join-Path $transientLogs "usage.jsonl"
+    '{"total_tokens":1000,"saved_tokens":400}' | Set-Content -LiteralPath $transientLogFile -Encoding UTF8
+    $transientFirst = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $scriptRoot "token-helper.ps1") refresh -ProjectPath $transientProject -DataPath $data -LogPath $transientLogs -Json | ConvertFrom-Json
+    if ([long]$transientFirst.state.cumulativeUsageTokens -ne 0 -or [long]$transientFirst.state.cumulativeSavedTokens -ne 0) {
+        throw "first transient log refresh should establish baseline"
+    }
+    Remove-Item -LiteralPath $transientLogFile -Force
+    $transientMissing = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $scriptRoot "token-helper.ps1") refresh -ProjectPath $transientProject -DataPath $data -LogPath $transientLogs -Json | ConvertFrom-Json
+    if ([string]$transientMissing.metrics.confidence -ne "missing") {
+        throw "expected transient missing confidence, got $($transientMissing.metrics.confidence)"
+    }
+    if ([long]$transientMissing.state.cumulativeUsageTokens -ne 0 -or [long]$transientMissing.state.cumulativeSavedTokens -ne 0) {
+        throw "transient missing data should not add token deltas"
+    }
+    '{"total_tokens":1000,"saved_tokens":400}' | Set-Content -LiteralPath $transientLogFile -Encoding UTF8
+    $transientRestored = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $scriptRoot "token-helper.ps1") refresh -ProjectPath $transientProject -DataPath $data -LogPath $transientLogs -Json | ConvertFrom-Json
+    if ([long]$transientRestored.state.cumulativeUsageTokens -ne 0 -or [long]$transientRestored.state.cumulativeSavedTokens -ne 0) {
+        throw "restored old logs should not be counted as new usage after a transient miss"
+    }
+    '{"total_tokens":1300,"saved_tokens":500}' | Set-Content -LiteralPath $transientLogFile -Encoding UTF8
+    $transientIncreased = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $scriptRoot "token-helper.ps1") refresh -ProjectPath $transientProject -DataPath $data -LogPath $transientLogs -Json | ConvertFrom-Json
+    if ([long]$transientIncreased.state.cumulativeUsageTokens -ne 300 -or [long]$transientIncreased.state.cumulativeSavedTokens -ne 100) {
+        throw "transient recovery should count only true new deltas"
+    }
+
     $nowUtc = (Get-Date).ToUniversalTime()
     $diagConfigOn = [PSCustomObject]@{ helperEnabled = $true }
     $diagConfigOff = [PSCustomObject]@{ helperEnabled = $false }

@@ -1085,6 +1085,9 @@ function Update-TuhState {
     $priorLiveSaved = Get-TuhLong -Value (Get-TuhProp -Object $prior -Name "liveSaved" -DefaultValue 0) -DefaultValue 0
     $currentUsage = Get-TuhLong -Value (Get-TuhProp -Object $metrics -Name "currentUsageTokens" -DefaultValue 0) -DefaultValue 0
     $currentSaved = Get-TuhLong -Value (Get-TuhProp -Object $metrics -Name "currentSavedTokens" -DefaultValue 0) -DefaultValue 0
+    $metricStatus = [string](Get-TuhProp -Object $metrics -Name "status" -DefaultValue "")
+    $metricConfidence = [string](Get-TuhProp -Object $metrics -Name "confidence" -DefaultValue "")
+    $isMissingObservation = (-not $manualMode -and $currentUsage -le 0 -and $currentSaved -le 0 -and ($metricStatus -eq "missing" -or $metricConfidence -eq "missing"))
     $hasPriorObservation = ($null -ne $prior)
     $usageDelta = 0L
     $savedDelta = 0L
@@ -1097,12 +1100,12 @@ function Update-TuhState {
         $savedDelta = [Math]::Max(0L, ([long]$currentSaved - [long]$priorSaved))
     }
     $liveUsage = Get-TuhLong -Value (Get-TuhProp -Object $metrics -Name "liveSessionTokens" -DefaultValue 0) -DefaultValue 0
-    $liveUsageDelta = if ($manualMode -or -not $hasPriorObservation -or $liveUsage -le 0 -or $priorLiveUsage -le 0) { 0L } else { [Math]::Max(0L, $liveUsage - $priorLiveUsage) }
+    $liveUsageDelta = if ($isMissingObservation -or $manualMode -or -not $hasPriorObservation -or $liveUsage -le 0 -or $priorLiveUsage -le 0) { 0L } else { [Math]::Max(0L, $liveUsage - $priorLiveUsage) }
     if ($liveUsageDelta -gt $usageDelta) {
         $usageDelta = $liveUsageDelta
     }
     $liveSaved = Get-TuhLong -Value (Get-TuhProp -Object $metrics -Name "liveHelperSavedTokens" -DefaultValue 0) -DefaultValue 0
-    $liveSavedDelta = if ($manualMode -or -not $hasPriorObservation -or $liveSaved -le 0 -or $priorLiveSaved -le 0) { 0L } else { [Math]::Max(0L, $liveSaved - $priorLiveSaved) }
+    $liveSavedDelta = if ($isMissingObservation -or $manualMode -or -not $hasPriorObservation -or $liveSaved -le 0 -or $priorLiveSaved -le 0) { 0L } else { [Math]::Max(0L, $liveSaved - $priorLiveSaved) }
     if ($liveSavedDelta -gt $savedDelta) {
         $savedDelta = $liveSavedDelta
     }
@@ -1157,13 +1160,15 @@ function Update-TuhState {
         savedSourceRunTokens = $sampleSavedRunTokens
     })
 
-    $observations[$key] = [PSCustomObject]@{
-        projectPath = $metrics.projectPath
-        usage = $currentUsage
-        saved = $currentSaved
-        liveUsage = $liveUsage
-        liveSaved = $liveSaved
-        updatedAtUtc = $now
+    if (-not $isMissingObservation) {
+        $observations[$key] = [PSCustomObject]@{
+            projectPath = $metrics.projectPath
+            usage = $currentUsage
+            saved = $currentSaved
+            liveUsage = $liveUsage
+            liveSaved = $liveSaved
+            updatedAtUtc = $now
+        }
     }
 
     $newState = [PSCustomObject]@{
