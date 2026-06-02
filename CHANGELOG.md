@@ -6,6 +6,7 @@
 
 - Full release gate script: `test-token-saver-release.ps1`.
 - MVP guards for immediate, race-safe panel reset behavior.
+- Release gate checks for stale installed runtime files.
 
 ## v0.1.0 - 2026-06-02
 

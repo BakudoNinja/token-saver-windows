@@ -184,6 +184,8 @@ Run the full release gate:
 powershell -ExecutionPolicy Bypass -File .\test-token-saver-release.ps1 -CloseExistingPanel
 ```
 
+The release gate also checks whether the default installed runtime and the Codex global shim directory are stale compared with the current source tree.
+
 Run the MVP smoke test:
 
 ```powershell

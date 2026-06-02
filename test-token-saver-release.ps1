@@ -1,6 +1,8 @@
 param(
     [switch]$SkipPanelSmoke,
-    [switch]$CloseExistingPanel
+    [switch]$CloseExistingPanel,
+    [string]$InstallRoot = "",
+    [string]$GlobalBinPath = "$env:USERPROFILE\.codex\bin"
 )
 
 Set-StrictMode -Version Latest
@@ -47,6 +49,45 @@ function Get-TokenSaverPanelProcesses {
     })
 }
 
+function Test-InstalledRuntimeConsistency {
+    param(
+        [string]$Name,
+        [string]$BinPath
+    )
+
+    if ([string]::IsNullOrWhiteSpace($BinPath) -or -not (Test-Path -LiteralPath $BinPath -PathType Container)) {
+        return "not installed"
+    }
+
+    $runtimeFiles = @(
+        "codex-token-kit.ps1",
+        "codex-token-auto-attach.ps1",
+        "codex-slim.ps1",
+        "test-token-saver-release.ps1",
+        "token-helper-core.ps1",
+        "token-helper.ps1",
+        "token-helper-panel.ps1"
+    )
+    $mismatches = @()
+    foreach ($fileName in $runtimeFiles) {
+        $source = Join-Path $scriptRoot $fileName
+        $installed = Join-Path $BinPath $fileName
+        if (-not (Test-Path -LiteralPath $installed -PathType Leaf)) {
+            $mismatches += "$fileName missing"
+            continue
+        }
+        $sourceHash = (Get-FileHash -LiteralPath $source -Algorithm SHA256).Hash
+        $installedHash = (Get-FileHash -LiteralPath $installed -Algorithm SHA256).Hash
+        if ($sourceHash -ne $installedHash) {
+            $mismatches += "$fileName differs"
+        }
+    }
+    if ($mismatches.Count -gt 0) {
+        throw ("{0} runtime is stale: {1}" -f $Name, ($mismatches -join "; "))
+    }
+    return "runtime files match source"
+}
+
 Invoke-ReleaseStep -Name "powershell-parse" -Script {
     $errors = @()
     foreach ($path in @(Get-ChildItem -LiteralPath $scriptRoot -Filter "*.ps1" -File)) {
@@ -76,6 +117,18 @@ Invoke-ReleaseStep -Name "context-regression" -Script {
         throw "context regression returned ok=false"
     }
     ("cacheHits={0}; cacheSavedTokens={1}; coverageRisk={2}" -f $result.cacheHits, $result.cacheSavedTokens, $result.coverageRisk)
+}
+
+$defaultInstallRoot = $InstallRoot
+if ([string]::IsNullOrWhiteSpace($defaultInstallRoot)) {
+    $base = if ($env:LOCALAPPDATA) { $env:LOCALAPPDATA } else { Join-Path $env:USERPROFILE "AppData\Local" }
+    $defaultInstallRoot = Join-Path $base "TokenUsageHelper"
+}
+Invoke-ReleaseStep -Name "installed-runtime" -Script {
+    Test-InstalledRuntimeConsistency -Name "installed-runtime" -BinPath (Join-Path $defaultInstallRoot "bin")
+}
+Invoke-ReleaseStep -Name "global-bin-runtime" -Script {
+    Test-InstalledRuntimeConsistency -Name "global-bin-runtime" -BinPath $GlobalBinPath
 }
 
 if ($SkipPanelSmoke) {

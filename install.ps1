@@ -27,6 +27,7 @@ $scripts = @(
     "codex-token-kit.ps1",
     "codex-slim.ps1",
     "codex-token-auto-attach.ps1",
+    "test-token-saver-release.ps1",
     "token-helper-core.ps1",
     "token-helper.ps1",
     "token-helper-panel.ps1",

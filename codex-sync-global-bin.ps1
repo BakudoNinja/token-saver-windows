@@ -16,6 +16,7 @@ $scripts = @(
     "codex-slim.ps1",
     "codex-context-regression.ps1",
     "codex-sync-global-bin.ps1",
+    "test-token-saver-release.ps1",
     "token-helper-core.ps1",
     "token-helper.ps1",
     "token-helper-panel.ps1",
