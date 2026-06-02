@@ -111,9 +111,11 @@ $script:refreshProcess = $null
 $script:refreshOutputPath = ""
 $script:refreshErrorPath = ""
 $script:refreshStartedAtUtc = [datetime]::MinValue
+$script:lastResetAtUtc = [datetime]::MinValue
 $script:refreshTimeoutSeconds = 25
 $script:clickThroughEnabled = $false
 $script:transparentKeyColor = [System.Drawing.Color]::FromArgb(1, 2, 3)
+$script:settingsResetApplied = $false
 
 function Get-TuhPanelOpacity {
     param([object]$Config)
@@ -638,6 +640,52 @@ function Apply-TuhPanelConfigImmediately {
     $script:panelForm.Text = ("Token saver - {0}" -f $status)
 }
 
+function Invoke-TuhPanelReset {
+    param([bool]$FromSettings = $false)
+
+    $script:lastResetAtUtc = (Get-Date).ToUniversalTime()
+    Clear-TuhRefreshProcess -Kill $true
+    $resetState = Reset-TuhState -DataPath $DataPath
+    $zeroMetrics = [PSCustomObject]@{
+        status = "reset"
+        confidence = "baseline"
+        source = "reset data"
+        currentUsageTokens = 0L
+        currentSavedTokens = 0L
+    }
+    $script:latestResult = [PSCustomObject]@{
+        ok = $true
+        config = $script:panelConfig
+        state = $resetState
+        metrics = $zeroMetrics
+        deltas = [PSCustomObject]@{
+            usageTokens = 0L
+            savedTokens = 0L
+        }
+    }
+    $script:lastRefreshError = ""
+    $script:latestSamples = @()
+    $script:latestDiagnostic = Get-TuhDiagnostic -Config $script:panelConfig -State $resetState -Metrics $zeroMetrics
+    $script:usageScaleMax = 1L
+    $script:savingScaleMax = 1L
+    $script:lastChartRenderKey = ""
+    if ($FromSettings) {
+        $script:settingsResetApplied = $true
+    }
+    Record-TuhPanelHealthEventIfNeeded
+    Invalidate-TuhCharts -All $true
+    if ($null -ne $usageChart) {
+        $usageChart.Refresh()
+    }
+    if ($null -ne $savingChart) {
+        $savingChart.Refresh()
+    }
+    if ($null -ne $script:panelForm) {
+        $script:panelForm.Text = "Token saver - reset"
+        $script:panelForm.Refresh()
+    }
+}
+
 function Clear-TuhRefreshProcess {
     param([bool]$Kill = $false)
 
@@ -685,6 +733,7 @@ function Complete-TuhPanelRefresh {
     }
 
     try {
+        $completedRefreshStartedAtUtc = $script:refreshStartedAtUtc
         try {
             $script:refreshProcess.Refresh()
             [void]$script:refreshProcess.WaitForExit(0)
@@ -702,6 +751,9 @@ function Complete-TuhPanelRefresh {
             throw $err
         }
         $result = $raw | ConvertFrom-Json
+        if ($completedRefreshStartedAtUtc -lt $script:lastResetAtUtc) {
+            return
+        }
         Apply-TuhRefreshResultToPanel -Result $result
     }
     catch {
@@ -1120,6 +1172,7 @@ function Draw-TuhDataStrip {
 function Show-TuhSettings {
     param([System.Windows.Forms.Form]$Owner)
 
+    $script:settingsResetApplied = $false
     $config = Read-TuhConfig -DataPath $DataPath
     $dialog = New-Object System.Windows.Forms.Form
     $script:settingsDialog = $dialog
@@ -1265,28 +1318,7 @@ function Show-TuhSettings {
     $resetButton.BackColor = [System.Drawing.Color]::FromArgb(42, 54, 70)
     $resetButton.ForeColor = [System.Drawing.Color]::FromArgb(230, 236, 242)
     $resetButton.Add_Click({
-        $resetState = Reset-TuhState -DataPath $DataPath
-        $script:latestResult = [PSCustomObject]@{
-            ok = $true
-            config = $script:panelConfig
-            state = $resetState
-            metrics = [PSCustomObject]@{
-                status = "reset"
-                confidence = "baseline"
-                source = "reset data"
-                currentUsageTokens = 0L
-                currentSavedTokens = 0L
-            }
-            deltas = [PSCustomObject]@{
-                usageTokens = 0L
-                savedTokens = 0L
-            }
-        }
-        $script:latestSamples = @()
-        $script:latestDiagnostic = Get-TuhDiagnostic -Config $script:panelConfig -State $resetState -Metrics $script:latestResult.metrics
-        $script:usageScaleMax = 1L
-        $script:lastChartRenderKey = ""
-        Invalidate-TuhCharts -All $true
+        Invoke-TuhPanelReset -FromSettings $true
         $script:settingsDialog.DialogResult = [System.Windows.Forms.DialogResult]::OK
         $script:settingsDialog.Close()
     })
@@ -1596,30 +1628,14 @@ $savingChart.Add_Paint({
     Draw-TuhDataStrip -Graphics $eventArgs.Graphics -Bounds $sender.ClientRectangle
 })
 
-$settingsItem.Add_Click({ Show-TuhSettings -Owner $script:panelForm; Refresh-TuhPanel })
-$resetItem.Add_Click({
-    $resetState = Reset-TuhState -DataPath $DataPath
-    $script:latestResult = [PSCustomObject]@{
-        ok = $true
-        config = $script:panelConfig
-        state = $resetState
-        metrics = [PSCustomObject]@{
-            status = "reset"
-            confidence = "baseline"
-            source = "reset data"
-            currentUsageTokens = 0L
-            currentSavedTokens = 0L
-        }
-        deltas = [PSCustomObject]@{
-            usageTokens = 0L
-            savedTokens = 0L
-        }
+$settingsItem.Add_Click({
+    Show-TuhSettings -Owner $script:panelForm
+    if (-not $script:settingsResetApplied) {
+        Refresh-TuhPanel
     }
-    $script:latestSamples = @()
-    $script:latestDiagnostic = Get-TuhDiagnostic -Config $script:panelConfig -State $resetState -Metrics $script:latestResult.metrics
-    $script:usageScaleMax = 1L
-    $script:lastChartRenderKey = ""
-    Invalidate-TuhCharts -All $true
+})
+$resetItem.Add_Click({
+    Invoke-TuhPanelReset
 })
 $exitItem.Add_Click({ $script:panelForm.Close() })
 
@@ -1631,7 +1647,9 @@ $usageChart.Add_MouseDown({
     $hit = Test-TuhCaptionHit -Point ([System.Drawing.Point]::new($eventArgs.X, $eventArgs.Y))
     if ($hit -eq "settings") {
         Show-TuhSettings -Owner $script:panelForm
-        Refresh-TuhPanel
+        if (-not $script:settingsResetApplied) {
+            Refresh-TuhPanel
+        }
         return
     }
     if ($hit -eq "pin") {
