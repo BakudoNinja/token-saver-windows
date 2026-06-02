@@ -80,7 +80,7 @@ For $agentLabel coding tasks in any project, before broad codebase exploration, 
 powershell -ExecutionPolicy Bypass -File $kit -ProjectPath .
 ```
 
-Then read `.codex/context.md` first and only open specific source files when needed. This makes the project use Token saver and lets the global dashboard measure actual project savings. Do not print saved keys or secrets.
+Then read `.codex/context.md` first and only open specific source files when needed. This makes the project use Token saver and lets the local panel/history estimate actual project savings. Do not print saved keys or secrets.
 <!-- END TOKEN SAVER AUTO ATTACH -->
 "@
 }

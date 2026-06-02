@@ -14,16 +14,7 @@ $scripts = @(
     "codex-token-kit.ps1",
     "codex-token-auto-attach.ps1",
     "codex-slim.ps1",
-    "codex-dashboard.ps1",
-    "codex-dashboard-server.ps1",
-    "codex-dashboard-smoke.ps1",
-    "codex-dashboard-js-smoke.ps1",
-    "codex-dashboard-performance.ps1",
-    "codex-token-audit.ps1",
-    "codex-token-usage-regression.ps1",
     "codex-context-regression.ps1",
-    "codex-helper-health.ps1",
-    "codex-save-openai-admin-key.ps1",
     "codex-sync-global-bin.ps1",
     "token-helper-core.ps1",
     "token-helper.ps1",
@@ -44,9 +35,6 @@ $scripts = @(
 $cmdShims = @{
     "codex-token-kit.cmd" = "codex-token-kit.ps1"
     "codex-token-auto-attach.cmd" = "codex-token-auto-attach.ps1"
-    "codex-dashboard.cmd" = "codex-dashboard.ps1"
-    "codex-helper-health.cmd" = "codex-helper-health.ps1"
-    "codex-save-openai-admin-key.cmd" = "codex-save-openai-admin-key.ps1"
     "codex-sync-global-bin.cmd" = "codex-sync-global-bin.ps1"
     "token-helper.cmd" = "token-helper.ps1"
     "token-helper-panel.cmd" = "token-helper-panel.ps1"

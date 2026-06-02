@@ -4,13 +4,6 @@ param(
     [string[]]$Include = @(),
     [switch]$SkipAiCodex,
     [switch]$Quiet,
-    [string]$PlanName = "",
-    [long]$PlanTotalTokens = -1,
-    [long]$PlanUsedTokens = -1,
-    [switch]$ReadOpenAIUsage,
-    [int]$OpenAIUsageDays = 31,
-    [string]$OpenAIAdminKeyEnv = "OPENAI_ADMIN_KEY",
-    [string]$OpenAIAdminKeyPath = "$env:USERPROFILE\.codex\openai-admin-key.dpapi",
     [string]$ConversationName = "",
     [string]$RunKind = "actual"
 )
@@ -117,27 +110,6 @@ if ($Include.Count -gt 0) {
     $slimArgs += $Include
 }
 
-if (-not [string]::IsNullOrWhiteSpace($PlanName)) {
-    $slimArgs += "-PlanName"
-    $slimArgs += $PlanName
-}
-if ($PlanTotalTokens -ge 0) {
-    $slimArgs += "-PlanTotalTokens"
-    $slimArgs += $PlanTotalTokens
-}
-if ($PlanUsedTokens -ge 0) {
-    $slimArgs += "-PlanUsedTokens"
-    $slimArgs += $PlanUsedTokens
-}
-if ($ReadOpenAIUsage) {
-    $slimArgs += "-ReadOpenAIUsage"
-    $slimArgs += "-OpenAIUsageDays"
-    $slimArgs += $OpenAIUsageDays
-    $slimArgs += "-OpenAIAdminKeyEnv"
-    $slimArgs += $OpenAIAdminKeyEnv
-    $slimArgs += "-OpenAIAdminKeyPath"
-    $slimArgs += $OpenAIAdminKeyPath
-}
 if (-not [string]::IsNullOrWhiteSpace($ConversationName)) {
     $slimArgs += "-ConversationName"
     $slimArgs += $ConversationName

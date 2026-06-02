@@ -163,7 +163,7 @@ The detailed engineering guide was moved to:
 docs/GUIDE.md
 ```
 
-It covers token accounting, OpenAI API usage notes, dashboard maintenance checks, RTK integration, regression tests, and the long-term optimization roadmap.
+It covers token accounting, adapter behavior, context generation, regression tests, and the long-term optimization roadmap.
 
 ## Development Checks
 
@@ -177,7 +177,7 @@ After changing scripts, sync global shims and run health checks:
 
 ```powershell
 .\codex-sync-global-bin.ps1
-codex-helper-health -ProjectPath .
+powershell -ExecutionPolicy Bypass -File .\test-token-helper-panel-smoke.ps1
 ```
 
 ## Design Principle
