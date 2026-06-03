@@ -721,6 +721,54 @@ try {
         throw "uninstall refusal did not explain non-default install root safety"
     }
 
+    $keepInstallRoot = Join-Path $work "keep-install"
+    $keepCodexHome = Join-Path $work "keep-codex-home"
+    $keepOldProject = Join-Path $work "keep-old-project"
+    $keepOldCodex = Join-Path $keepOldProject ".codex"
+    New-Item -ItemType Directory -Force -Path $keepCodexHome, $keepOldCodex | Out-Null
+    "keep old project" | Set-Content -LiteralPath (Join-Path $keepOldProject "README.md") -Encoding UTF8
+    [PSCustomObject]@{
+        generatedAt = (Get-Date).ToUniversalTime().ToString("o")
+        conversationName = "keep-old"
+        projectPath = $keepOldProject
+        originalTokens = 9000
+        outputTokens = 1500
+        savedTokens = 7500
+        runKind = "actual"
+    } | ConvertTo-Json -Compress | Set-Content -LiteralPath (Join-Path $keepCodexHome "codex-token-helper-history.jsonl") -Encoding UTF8
+    $keepInstall = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $scriptRoot "install.ps1") -InstallRoot $keepInstallRoot -NoShortcut -CodexHome $keepCodexHome -MaxAutoAttachProjects 3 -Agents All -SkipAutoAttachContext -DisableAutoAttachFallbackScan | ConvertFrom-Json
+    $keepAgentRulePaths = @(
+        (Join-Path $keepCodexHome "AGENTS.md"),
+        (Join-Path $keepOldProject "CLAUDE.md"),
+        (Join-Path $keepOldProject ".cursor\rules\token-saver.mdc"),
+        (Join-Path $keepOldProject ".aider.token-saver.md"),
+        (Join-Path $keepOldProject "TOKEN_SAVER.md")
+    )
+    foreach ($keepRulePath in $keepAgentRulePaths) {
+        if (-not (Test-Path -LiteralPath $keepRulePath -PathType Leaf)) {
+            throw "keep uninstall fixture missing agent rule: $keepRulePath"
+        }
+    }
+    if (-not (Test-Path -LiteralPath (Join-Path $keepOldCodex "config.json") -PathType Leaf) -or -not (Test-Path -LiteralPath (Join-Path $keepOldCodex "state.json") -PathType Leaf)) {
+        throw "keep uninstall fixture missing auto-attached project data"
+    }
+    $keepUninstall = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $scriptRoot "uninstall.ps1") -InstallRoot $keepInstall.installRoot -RemoveData -KeepGlobalAgents -KeepProjectData | ConvertFrom-Json
+    if (Test-Path -LiteralPath $keepInstallRoot) {
+        throw "keep uninstall should still remove install root when -RemoveData is explicit"
+    }
+    if ([bool]$keepUninstall.removedAgentsBlock -or [int]$keepUninstall.removedAgentRuleFileCount -ne 0 -or [int]$keepUninstall.removedProjectFileCount -ne 0) {
+        throw "keep uninstall should not remove agent rules or project data"
+    }
+    foreach ($keepRulePath in $keepAgentRulePaths) {
+        $keepRuleText = Get-Content -LiteralPath $keepRulePath -Raw
+        if ($keepRuleText -notmatch [regex]::Escape("Token Saver Auto Attach")) {
+            throw "keep uninstall should preserve Token Saver agent rule: $keepRulePath"
+        }
+    }
+    if (-not (Test-Path -LiteralPath (Join-Path $keepOldCodex "config.json") -PathType Leaf) -or -not (Test-Path -LiteralPath (Join-Path $keepOldCodex "state.json") -PathType Leaf)) {
+        throw "keep uninstall should preserve auto-attached project config/state"
+    }
+
     [PSCustomObject]@{
         ok = $true
         testedAtUtc = (Get-Date).ToUniversalTime().ToString("o")

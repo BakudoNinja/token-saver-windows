@@ -9,6 +9,7 @@
 - Release gate checks for stale installed runtime files.
 - Release gate dependencies are included in installed runtimes.
 - Regression coverage for corrupt runtime data, transient missing usage data, locked history files, panel child-process cleanup, and uninstall preservation of user agent-rule files.
+- Regression coverage for uninstall keep-flags that preserve agent rules and auto-attached project data while removing the installed runtime.
 
 ### Changed
 
