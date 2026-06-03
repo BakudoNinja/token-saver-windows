@@ -699,6 +699,28 @@ try {
         throw "uninstall should remove auto-created project state.json"
     }
 
+    $unsafeInstallRoot = Join-Path $work "unsafe-install-root"
+    New-Item -ItemType Directory -Force -Path $unsafeInstallRoot | Out-Null
+    "do not delete without explicit RemoveData" | Set-Content -LiteralPath (Join-Path $unsafeInstallRoot "sentinel.txt") -Encoding UTF8
+    $previousErrorActionPreference = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        $unsafeUninstallOutput = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $scriptRoot "uninstall.ps1") -InstallRoot $unsafeInstallRoot 2>&1
+        $unsafeUninstallExitCode = $LASTEXITCODE
+    }
+    finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+    }
+    if ($unsafeUninstallExitCode -eq 0) {
+        throw "uninstall should refuse non-default install roots without -RemoveData"
+    }
+    if (-not (Test-Path -LiteralPath (Join-Path $unsafeInstallRoot "sentinel.txt") -PathType Leaf)) {
+        throw "uninstall refusal should leave non-default install root untouched"
+    }
+    if (($unsafeUninstallOutput -join "`n") -notmatch [regex]::Escape("Refusing to remove a non-default install root without -RemoveData")) {
+        throw "uninstall refusal did not explain non-default install root safety"
+    }
+
     [PSCustomObject]@{
         ok = $true
         testedAtUtc = (Get-Date).ToUniversalTime().ToString("o")

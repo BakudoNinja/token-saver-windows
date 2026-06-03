@@ -15,7 +15,8 @@ if ([string]::IsNullOrWhiteSpace($InstallRoot)) {
 
 $installRootFull = [System.IO.Path]::GetFullPath($InstallRoot)
 $expectedBase = if ($env:LOCALAPPDATA) { [System.IO.Path]::GetFullPath($env:LOCALAPPDATA) } else { [System.IO.Path]::GetFullPath((Join-Path $env:USERPROFILE "AppData\Local")) }
-$isDefaultArea = $installRootFull.ToLowerInvariant().StartsWith($expectedBase.ToLowerInvariant())
+$defaultInstallRoot = [System.IO.Path]::GetFullPath((Join-Path $expectedBase "TokenUsageHelper"))
+$isDefaultArea = $installRootFull.TrimEnd('\') -ieq $defaultInstallRoot.TrimEnd('\')
 
 if (-not $isDefaultArea -and -not $RemoveData) {
     throw "Refusing to remove a non-default install root without -RemoveData: $installRootFull"

@@ -21,6 +21,7 @@
 
 - Prevented transient missing data from resetting usage baselines and creating false token deltas when data returns.
 - Ensured panel refresh child processes are waited on during cleanup.
+- Refused custom install-root uninstall unless `-RemoveData` is explicit, with regression coverage that the target directory stays untouched.
 
 ## v0.1.0 - 2026-06-02
 
