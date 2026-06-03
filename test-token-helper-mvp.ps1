@@ -98,6 +98,11 @@ try {
     if ($installText -notmatch [regex]::Escape("Token saver.lnk")) {
         throw "install shortcut should be named Token saver.lnk"
     }
+    foreach ($releaseGateDependency in @("codex-context-regression.ps1", "test-token-helper-mvp.ps1", "test-token-helper-panel-smoke.ps1")) {
+        if ($installText -notmatch [regex]::Escape($releaseGateDependency)) {
+            throw "install.ps1 should copy release gate dependency $releaseGateDependency"
+        }
+    }
     if ($installText -notmatch [regex]::Escape("token-saver.ico") -or $installText -notmatch [regex]::Escape("IconLocation")) {
         throw "install should generate and assign a Token saver shortcut icon"
     }
@@ -568,6 +573,11 @@ try {
     foreach ($installedScriptName in @("codex-token-kit.ps1", "codex-slim.ps1", "codex-token-auto-attach.ps1")) {
         if (-not (Test-Path -LiteralPath (Join-Path $install.binPath $installedScriptName) -PathType Leaf)) {
             throw "install did not copy auto attach dependency $installedScriptName"
+        }
+    }
+    foreach ($installedTestName in @("test-token-saver-release.ps1", "codex-context-regression.ps1", "test-token-helper-mvp.ps1", "test-token-helper-panel-smoke.ps1")) {
+        if (-not (Test-Path -LiteralPath (Join-Path $install.binPath $installedTestName) -PathType Leaf)) {
+            throw "install did not copy release gate dependency $installedTestName"
         }
     }
     foreach ($agentInstallerName in $agentInstallerNames) {

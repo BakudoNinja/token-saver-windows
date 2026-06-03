@@ -27,10 +27,21 @@ $scripts = @(
     "codex-token-kit.ps1",
     "codex-slim.ps1",
     "codex-token-auto-attach.ps1",
+    "codex-context-regression.ps1",
     "test-token-saver-release.ps1",
+    "test-token-helper-mvp.ps1",
+    "test-token-helper-panel-smoke.ps1",
     "token-helper-core.ps1",
     "token-helper.ps1",
     "token-helper-panel.ps1",
+    "install.ps1",
+    "install-codex.ps1",
+    "install-claude.ps1",
+    "install-cursor.ps1",
+    "install-aider.ps1",
+    "install-generic.ps1",
+    "install-all-agents.ps1",
+    "uninstall.ps1",
     "README.md"
 )
 
