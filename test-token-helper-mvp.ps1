@@ -69,6 +69,26 @@ try {
             throw "install.ps1 should copy agent installer $agentInstallerName"
         }
     }
+    $detectedInstallRoot = Join-Path $work "detected-install"
+    $detectedInstall = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $scriptRoot "install-all-agents.ps1") -InstallRoot $detectedInstallRoot -NoShortcut -NoAutoAttach -DetectedAgents Codex,Cursor | ConvertFrom-Json
+    if (@($detectedInstall.allAgentsMode.appliedAgents) -notcontains "Codex" -or @($detectedInstall.allAgentsMode.appliedAgents) -notcontains "Cursor") {
+        throw "install-all should apply detected agents"
+    }
+    foreach ($missingAgent in @("Claude", "Aider", "Generic")) {
+        if (@($detectedInstall.allAgentsMode.skippedAgents) -notcontains $missingAgent) {
+            throw "install-all should list missing agent as skipped: $missingAgent"
+        }
+    }
+    $forceInstallRoot = Join-Path $work "force-all-install"
+    $forceInstall = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $scriptRoot "install-all-agents.ps1") -InstallRoot $forceInstallRoot -NoShortcut -NoAutoAttach -DetectedAgents Codex -ForceAll | ConvertFrom-Json
+    foreach ($forcedAgent in @("Codex", "Claude", "Cursor", "Aider", "Generic")) {
+        if (@($forceInstall.allAgentsMode.appliedAgents) -notcontains $forcedAgent) {
+            throw "install-all -ForceAll should apply $forcedAgent"
+        }
+    }
+    if (@($forceInstall.allAgentsMode.skippedAgents).Count -ne 0) {
+        throw "install-all -ForceAll should not report skipped agents"
+    }
     if (-not (Test-Path -LiteralPath (Join-Path $scriptRoot "test-token-saver-release.ps1") -PathType Leaf)) {
         throw "missing release gate test-token-saver-release.ps1"
     }

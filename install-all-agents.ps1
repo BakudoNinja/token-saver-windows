@@ -19,7 +19,16 @@ function Get-TokenSaverDetectedAgents {
     param([string]$TargetCodexHome)
 
     if (@($DetectedAgents).Count -gt 0) {
-        return @($DetectedAgents)
+        $explicit = New-Object System.Collections.Generic.List[string]
+        foreach ($detected in @($DetectedAgents)) {
+            foreach ($part in ([string]$detected -split ",")) {
+                $agent = $part.Trim()
+                if (-not [string]::IsNullOrWhiteSpace($agent) -and @($explicit.ToArray()) -notcontains $agent) {
+                    [void]$explicit.Add($agent)
+                }
+            }
+        }
+        return @($explicit.ToArray())
     }
 
     $found = New-Object System.Collections.Generic.List[string]
