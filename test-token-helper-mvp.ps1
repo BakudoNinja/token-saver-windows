@@ -376,6 +376,69 @@ try {
         $script:tuhHelperHistoryCacheLength = -1L
     }
 
+    $previousUserProfile = $env:USERPROFILE
+    $sessionUserProfile = Join-Path $work "session-user"
+    $sessionRoot = Join-Path $sessionUserProfile ".codex\sessions"
+    New-Item -ItemType Directory -Force -Path $sessionRoot | Out-Null
+    $sessionFileOne = Join-Path $sessionRoot "session-one.jsonl"
+    $sessionFileTwo = Join-Path $sessionRoot "session-two.jsonl"
+    @(
+        ([PSCustomObject]@{
+            timestamp = (Get-Date).ToUniversalTime().AddMinutes(-4).ToString("o")
+            type = "event"
+            payload = [PSCustomObject]@{
+                type = "token_count"
+                info = [PSCustomObject]@{
+                    total_token_usage = [PSCustomObject]@{ total_tokens = 100 }
+                }
+            }
+        } | ConvertTo-Json -Compress -Depth 8),
+        ([PSCustomObject]@{
+            timestamp = (Get-Date).ToUniversalTime().AddMinutes(-2).ToString("o")
+            type = "event"
+            payload = [PSCustomObject]@{
+                type = "token_count"
+                info = [PSCustomObject]@{
+                    total_token_usage = [PSCustomObject]@{ total_tokens = 700 }
+                }
+            }
+        } | ConvertTo-Json -Compress -Depth 8)
+    ) | Set-Content -LiteralPath $sessionFileOne -Encoding UTF8
+    @(
+        '{"type":"event","payload":{"type":"other"}}',
+        ([PSCustomObject]@{
+            timestamp = (Get-Date).ToUniversalTime().AddMinutes(-1).ToString("o")
+            type = "event"
+            payload = [PSCustomObject]@{
+                type = "token_count"
+                info = [PSCustomObject]@{
+                    total_token_usage = [PSCustomObject]@{ total_tokens = 1300 }
+                }
+            }
+        } | ConvertTo-Json -Compress -Depth 8)
+    ) | Set-Content -LiteralPath $sessionFileTwo -Encoding UTF8
+    try {
+        $env:USERPROFILE = $sessionUserProfile
+        $script:tuhSessionFileCache = @()
+        $script:tuhSessionFileCacheAtUtc = [datetime]::MinValue
+        $script:tuhSessionUsageCache = $null
+        $script:tuhSessionUsageCacheAtUtc = [datetime]::MinValue
+        $sessionMetrics = Get-TuhCodexSessionUsageMetrics -RecentFileCount 6 -TailLines 20
+        if (-not [bool]$sessionMetrics.ok -or [long]$sessionMetrics.totalTokens -ne 2000 -or [int]$sessionMetrics.fileCount -ne 2) {
+            throw "codex session token_count parser should sum latest token_count from each session file: $($sessionMetrics | ConvertTo-Json -Compress)"
+        }
+        if ([string]::IsNullOrWhiteSpace([string]$sessionMetrics.latestTokenAtUtc)) {
+            throw "codex session token_count parser should report latest token timestamp"
+        }
+    }
+    finally {
+        $env:USERPROFILE = $previousUserProfile
+        $script:tuhSessionFileCache = @()
+        $script:tuhSessionFileCacheAtUtc = [datetime]::MinValue
+        $script:tuhSessionUsageCache = $null
+        $script:tuhSessionUsageCacheAtUtc = [datetime]::MinValue
+    }
+
     $defaultConfig = Read-TuhConfig -DataPath (Join-Path $work "fresh-data")
     if ([int]$defaultConfig.panelOpacityPercent -ne 72) {
         throw "expected default panel opacity 72, got $($defaultConfig.panelOpacityPercent)"
