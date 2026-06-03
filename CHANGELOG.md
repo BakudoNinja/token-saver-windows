@@ -17,6 +17,7 @@
 - Panel duplicate-launch mutex is acquired before WinForms loads.
 - Release gate now reports structured JSON with failed and skipped counts.
 - Global history writes are best-effort and no longer fail context generation when the history file is locked.
+- Auto-attach now processes recent history newest-first before applying the project limit, so active projects are less likely to be skipped when many old projects exist.
 
 ### Fixed
 

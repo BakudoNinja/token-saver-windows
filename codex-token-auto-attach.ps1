@@ -215,7 +215,9 @@ function Get-TokenSaverCandidateProjects {
 
     $historyPath = Join-Path $TargetCodexHome "codex-token-helper-history.jsonl"
     if (Test-Path -LiteralPath $historyPath -PathType Leaf) {
-        foreach ($line in @(Get-Content -LiteralPath $historyPath -Tail 300 -ErrorAction SilentlyContinue)) {
+        $historyLines = @(Get-Content -LiteralPath $historyPath -Tail 300 -ErrorAction SilentlyContinue)
+        [array]::Reverse($historyLines)
+        foreach ($line in $historyLines) {
             if ([string]::IsNullOrWhiteSpace($line)) {
                 continue
             }

@@ -562,7 +562,22 @@ try {
         originalTokens = 8000
         savedTokens = 6800
     } | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $autoOldCodex "stats.json") -Encoding UTF8
-    [PSCustomObject]@{
+    $autoHistoryLines = New-Object System.Collections.Generic.List[string]
+    foreach ($historyIndex in 1..4) {
+        $olderProject = Join-Path $work ("auto-older-project-{0}" -f $historyIndex)
+        New-Item -ItemType Directory -Force -Path $olderProject | Out-Null
+        "auto older project $historyIndex" | Set-Content -LiteralPath (Join-Path $olderProject "README.md") -Encoding UTF8
+        [void]$autoHistoryLines.Add(([PSCustomObject]@{
+            generatedAt = (Get-Date).AddMinutes(-10 + $historyIndex).ToUniversalTime().ToString("o")
+            conversationName = ("auto-older-{0}" -f $historyIndex)
+            projectPath = $olderProject
+            originalTokens = 7000 + $historyIndex
+            outputTokens = 1000
+            savedTokens = 6000 + $historyIndex
+            runKind = "actual"
+        } | ConvertTo-Json -Compress))
+    }
+    [void]$autoHistoryLines.Add(([PSCustomObject]@{
         generatedAt = (Get-Date).ToUniversalTime().ToString("o")
         conversationName = "auto-old"
         projectPath = $autoOldProject
@@ -570,7 +585,8 @@ try {
         outputTokens = 1200
         savedTokens = 6800
         runKind = "actual"
-    } | ConvertTo-Json -Compress | Set-Content -LiteralPath (Join-Path $autoCodexHome "codex-token-helper-history.jsonl") -Encoding UTF8
+    } | ConvertTo-Json -Compress))
+    $autoHistoryLines.ToArray() | Set-Content -LiteralPath (Join-Path $autoCodexHome "codex-token-helper-history.jsonl") -Encoding UTF8
 
     $install = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $scriptRoot "install.ps1") -InstallRoot $installRoot -NoShortcut -CodexHome $autoCodexHome -MaxAutoAttachProjects 3 -Agents All -SkipAutoAttachContext -DisableAutoAttachFallbackScan | ConvertFrom-Json
     if (-not (Test-Path -LiteralPath (Join-Path $install.binPath "token-helper.ps1") -PathType Leaf)) {
@@ -621,8 +637,15 @@ try {
     if (-not (Test-Path -LiteralPath (Join-Path $autoOldCodex "config.json") -PathType Leaf) -or -not (Test-Path -LiteralPath (Join-Path $autoOldCodex "state.json") -PathType Leaf)) {
         throw "install auto-attach did not initialize old project .codex config/state"
     }
-    if ([int]$install.autoAttach.autoAttachProjectCount -lt 1 -or [int]$install.autoAttach.autoAttachOkCount -lt 1) {
+    if ([int]$install.autoAttach.autoAttachProjectCount -ne 3 -or [int]$install.autoAttach.autoAttachOkCount -ne 3) {
         throw "install auto-attach did not report attached old project"
+    }
+    $attachedProjectPaths = @($install.autoAttach.attachedProjects | ForEach-Object { [string]$_.projectPath })
+    if ([string]$attachedProjectPaths[0] -ne [System.IO.Path]::GetFullPath($autoOldProject)) {
+        throw "install auto-attach should process most recent history project first"
+    }
+    if (@($attachedProjectPaths).Count -ne 3 -or @($attachedProjectPaths | Where-Object { [string]::IsNullOrWhiteSpace($_) }).Count -gt 0) {
+        throw "install auto-attach should honor MaxAutoAttachProjects"
     }
     $autoManifest = Get-Content -LiteralPath $install.manifestPath -Raw | ConvertFrom-Json
     if ($null -eq $autoManifest.autoAttach -or @($autoManifest.autoAttach.attachedProjects).Count -lt 1) {
