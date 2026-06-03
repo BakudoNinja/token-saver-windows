@@ -105,6 +105,7 @@ $script:settingsDialog = $null
 $script:lastPanelStatusLabel = ""
 $script:lastHealthEventKey = ""
 $script:lastChartRenderKey = ""
+$script:lastChartAnchorUtc = [datetime]::MinValue
 $script:usageScaleMax = 1L
 $script:savingScaleMax = 1L
 $script:refreshProcess = $null
@@ -553,14 +554,16 @@ function Invalidate-TuhCharts {
     $statusChanged = ($currentStatus -ne $script:lastPanelStatusLabel)
     $script:lastPanelStatusLabel = $currentStatus
 
-    $usageValues = Get-TuhFixedSampleSeries -Samples $script:latestSamples -Field "usageTokens" -Minutes $ChartMinutes -SlotSeconds $ChartSlotSeconds
-    $savedValues = Get-TuhFixedSampleSeries -Samples $script:latestSamples -Field "savedTokens" -Minutes $ChartMinutes -SlotSeconds $ChartSlotSeconds
+    $chartAnchorUtc = Get-TuhChartAnchorUtc
+    $usageValues = Get-TuhFixedSampleSeries -Samples $script:latestSamples -Field "usageTokens" -Minutes $ChartMinutes -SlotSeconds $ChartSlotSeconds -AnchorUtc $chartAnchorUtc
+    $savedValues = Get-TuhFixedSampleSeries -Samples $script:latestSamples -Field "savedTokens" -Minutes $ChartMinutes -SlotSeconds $ChartSlotSeconds -AnchorUtc $chartAnchorUtc
     $currentUsageTotal = if ($null -ne $script:latestResult -and $null -ne $script:latestResult.metrics) { [string]$script:latestResult.metrics.currentUsageTokens } else { "0" }
     $currentSavedTotal = if ($null -ne $script:latestResult -and $null -ne $script:latestResult.metrics) { [string]$script:latestResult.metrics.currentSavedTokens } else { "0" }
-    $sampleKey = "{0}|{1}|{2}|{3}|{4}" -f `
+    $sampleKey = "{0}|{1}|{2}|{3}|{4}|{5}" -f `
         $currentStatus, `
         $currentUsageTotal, `
         $currentSavedTotal, `
+        $chartAnchorUtc.ToString("o"), `
         ([string]::Join(",", $usageValues)), `
         ([string]::Join(",", $savedValues))
     $dataChanged = ($sampleKey -ne $script:lastChartRenderKey)
@@ -894,15 +897,33 @@ function Get-TuhScopeLabel {
     return Get-TuhProjectLabel
 }
 
+function Get-TuhChartAnchorUtc {
+    $raw = ""
+    if ($null -ne $script:latestResult -and $null -ne $script:latestResult.state) {
+        $raw = [string](Get-TuhProp -Object $script:latestResult.state -Name "lastRefreshAtUtc" -DefaultValue "")
+    }
+    $parsed = [datetime]::MinValue
+    if ([datetime]::TryParse($raw, [ref]$parsed)) {
+        $script:lastChartAnchorUtc = $parsed.ToUniversalTime()
+        return $script:lastChartAnchorUtc
+    }
+    if ($script:lastChartAnchorUtc -ne [datetime]::MinValue) {
+        return $script:lastChartAnchorUtc
+    }
+    $script:lastChartAnchorUtc = (Get-Date).ToUniversalTime()
+    return $script:lastChartAnchorUtc
+}
+
 function Get-TuhFixedSampleSeries {
     param(
         [object[]]$Samples,
         [string]$Field,
         [int]$Minutes = 15,
-        [int]$SlotSeconds = 30
+        [int]$SlotSeconds = 30,
+        [datetime]$AnchorUtc = [datetime]::MinValue
     )
 
-    $now = (Get-Date).ToUniversalTime()
+    $now = if ($AnchorUtc -eq [datetime]::MinValue) { (Get-Date).ToUniversalTime() } else { $AnchorUtc.ToUniversalTime() }
     $slotCount = [Math]::Max(2, [int][Math]::Ceiling(($Minutes * 60.0) / [Math]::Max(1, $SlotSeconds)))
     $buckets = New-Object long[] $slotCount
     $nowSlot = [long][Math]::Floor(((New-TimeSpan -Start ([datetime]"1970-01-01T00:00:00Z") -End $now).TotalSeconds) / $SlotSeconds)
@@ -1118,8 +1139,9 @@ function Draw-TuhDataStrip {
 
     $usageTotal = if ($null -ne $script:latestResult -and $null -ne $script:latestResult.state) { [long]$script:latestResult.state.cumulativeUsageTokens } else { 0L }
     $savedTotal = if ($null -ne $script:latestResult -and $null -ne $script:latestResult.state) { [long]$script:latestResult.state.cumulativeSavedTokens } else { 0L }
-    $usageValues = Get-TuhFixedSampleSeries -Samples $script:latestSamples -Field "usageTokens" -Minutes $ChartMinutes -SlotSeconds $ChartSlotSeconds
-    $savedValues = Get-TuhFixedSampleSeries -Samples $script:latestSamples -Field "savedTokens" -Minutes $ChartMinutes -SlotSeconds $ChartSlotSeconds
+    $chartAnchorUtc = Get-TuhChartAnchorUtc
+    $usageValues = Get-TuhFixedSampleSeries -Samples $script:latestSamples -Field "usageTokens" -Minutes $ChartMinutes -SlotSeconds $ChartSlotSeconds -AnchorUtc $chartAnchorUtc
+    $savedValues = Get-TuhFixedSampleSeries -Samples $script:latestSamples -Field "savedTokens" -Minutes $ChartMinutes -SlotSeconds $ChartSlotSeconds -AnchorUtc $chartAnchorUtc
     $usagePeak = 0L
     foreach ($value in $usageValues) {
         if ($value -gt $usagePeak) {
@@ -1602,8 +1624,9 @@ function Refresh-TuhPanel {
 
 $usageChart.Add_Paint({
     param($sender, $eventArgs)
-    $values = Get-TuhFixedSampleSeries -Samples $script:latestSamples -Field "usageTokens" -Minutes $ChartMinutes -SlotSeconds $ChartSlotSeconds
-    $savedValues = Get-TuhFixedSampleSeries -Samples $script:latestSamples -Field "savedTokens" -Minutes $ChartMinutes -SlotSeconds $ChartSlotSeconds
+    $chartAnchorUtc = Get-TuhChartAnchorUtc
+    $values = Get-TuhFixedSampleSeries -Samples $script:latestSamples -Field "usageTokens" -Minutes $ChartMinutes -SlotSeconds $ChartSlotSeconds -AnchorUtc $chartAnchorUtc
+    $savedValues = Get-TuhFixedSampleSeries -Samples $script:latestSamples -Field "savedTokens" -Minutes $ChartMinutes -SlotSeconds $ChartSlotSeconds -AnchorUtc $chartAnchorUtc
     $script:usageScaleMax = Update-TuhStickyScale -CurrentScale $script:usageScaleMax -Values $values
     $script:usageScaleMax = Update-TuhStickyScale -CurrentScale $script:usageScaleMax -Values $savedValues
     $usageEmptyText = "no new usage"

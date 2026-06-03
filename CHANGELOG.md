@@ -19,6 +19,7 @@
 - Release gate now reports structured JSON with failed and skipped counts.
 - Global history writes are best-effort and no longer fail context generation when the history file is locked.
 - Auto-attach now processes recent history newest-first before applying the project limit, so active projects are less likely to be skipped when many old projects exist.
+- Panel charts now anchor their 15-minute buckets to the latest refresh time, reducing visual drift when the window repaints without new data.
 
 ### Fixed
 

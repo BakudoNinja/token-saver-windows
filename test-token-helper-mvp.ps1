@@ -204,6 +204,11 @@ try {
     if ($panelText -match 'max/run\s+\{0\}\s+\{1\}' -or $panelText -match 'savedPeakProject') {
         throw "panel should not show project names next to max/run"
     }
+    foreach ($chartAnchorText in @("function Get-TuhChartAnchorUtc", "lastChartAnchorUtc", "-AnchorUtc `$chartAnchorUtc")) {
+        if ($panelText -notmatch [regex]::Escape($chartAnchorText)) {
+            throw "panel charts should use a stable refresh anchor: $chartAnchorText"
+        }
+    }
 
     $stats = [PSCustomObject]@{
         projectPath = $project
