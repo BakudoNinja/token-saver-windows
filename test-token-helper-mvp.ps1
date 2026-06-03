@@ -332,6 +332,50 @@ try {
         throw "expected manual confidence, got $($manual.metrics.confidence)"
     }
 
+    $previousUserProfile = $env:USERPROFILE
+    $historyUserProfile = Join-Path $work "history-user"
+    $historyCodexHome = Join-Path $historyUserProfile ".codex"
+    New-Item -ItemType Directory -Force -Path $historyCodexHome | Out-Null
+    $historyProjectOld = Join-Path $work "history-old"
+    $historyProjectNew = Join-Path $work "history-new"
+    New-Item -ItemType Directory -Force -Path $historyProjectOld, $historyProjectNew | Out-Null
+    @(
+        ([PSCustomObject]@{
+            atUtc = (Get-Date).ToUniversalTime().AddMinutes(-3).ToString("o")
+            projectPath = $historyProjectOld
+            runKind = "actual"
+            savedTokens = 111
+        } | ConvertTo-Json -Compress),
+        ([PSCustomObject]@{
+            generatedAt = (Get-Date).ToUniversalTime().AddMinutes(-1).ToString("o")
+            projectPath = $historyProjectNew
+            runKind = "actual"
+            savedTokens = 222
+        } | ConvertTo-Json -Compress)
+    ) | Set-Content -LiteralPath (Join-Path $historyCodexHome "codex-token-helper-history.jsonl") -Encoding UTF8
+    try {
+        $env:USERPROFILE = $historyUserProfile
+        $script:tuhHelperHistoryCache = $null
+        $script:tuhHelperHistoryCacheAtUtc = [datetime]::MinValue
+        $script:tuhHelperHistoryCacheWriteUtc = [datetime]::MinValue
+        $script:tuhHelperHistoryCacheLength = -1L
+        $historySavedMetrics = Get-TuhHelperHistorySavedMetrics
+        if (-not [bool]$historySavedMetrics.ok -or [long]$historySavedMetrics.totalSavedTokens -ne 333 -or [string]$historySavedMetrics.latestProjectPath -ne [System.IO.Path]::GetFullPath($historyProjectNew)) {
+            throw "helper history saved metrics should read atUtc/generatedAt timestamps: $($historySavedMetrics | ConvertTo-Json -Compress)"
+        }
+        $historySavedSamples = @(Get-TuhRecentHelperSavedSamples -SinceUtc (Get-Date).ToUniversalTime().AddMinutes(-15))
+        if ($historySavedSamples.Count -ne 2 -or @($historySavedSamples | Where-Object { [long]$_.savedTokens -gt 0 }).Count -ne 2) {
+            throw "helper history saved samples should include atUtc/generatedAt entries"
+        }
+    }
+    finally {
+        $env:USERPROFILE = $previousUserProfile
+        $script:tuhHelperHistoryCache = $null
+        $script:tuhHelperHistoryCacheAtUtc = [datetime]::MinValue
+        $script:tuhHelperHistoryCacheWriteUtc = [datetime]::MinValue
+        $script:tuhHelperHistoryCacheLength = -1L
+    }
+
     $defaultConfig = Read-TuhConfig -DataPath (Join-Path $work "fresh-data")
     if ([int]$defaultConfig.panelOpacityPercent -ne 72) {
         throw "expected default panel opacity 72, got $($defaultConfig.panelOpacityPercent)"

@@ -24,6 +24,7 @@
 - Prevented transient missing data from resetting usage baselines and creating false token deltas when data returns.
 - Ensured panel refresh child processes are waited on during cleanup.
 - Refused custom install-root uninstall unless `-RemoveData` is explicit, with regression coverage that the target directory stays untouched.
+- Helper saved history now recognizes `atUtc`, `generatedAtUtc`, and legacy `generatedAt` timestamps, so saved-token peaks and latest source projects are not dropped from the panel.
 
 ## v0.1.0 - 2026-06-02
 

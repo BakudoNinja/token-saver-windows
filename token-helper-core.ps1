@@ -762,6 +762,12 @@ function Get-TuhHelperHistorySavedMetrics {
                 $total += $saved
                 $entryCount++
                 $rawAt = [string](Get-TuhProp -Object $entry -Name "generatedAtUtc" -DefaultValue "")
+                if ([string]::IsNullOrWhiteSpace($rawAt)) {
+                    $rawAt = [string](Get-TuhProp -Object $entry -Name "atUtc" -DefaultValue "")
+                }
+                if ([string]::IsNullOrWhiteSpace($rawAt)) {
+                    $rawAt = [string](Get-TuhProp -Object $entry -Name "generatedAt" -DefaultValue "")
+                }
                 $parsedAt = [datetime]::MinValue
                 if ([datetime]::TryParse($rawAt, [ref]$parsedAt) -and $parsedAt.ToUniversalTime() -gt $latestAt) {
                     $latestAt = $parsedAt.ToUniversalTime()
@@ -820,6 +826,12 @@ function Get-TuhRecentHelperSavedSamples {
                     continue
                 }
                 $rawAt = [string](Get-TuhProp -Object $entry -Name "generatedAtUtc" -DefaultValue "")
+                if ([string]::IsNullOrWhiteSpace($rawAt)) {
+                    $rawAt = [string](Get-TuhProp -Object $entry -Name "atUtc" -DefaultValue "")
+                }
+                if ([string]::IsNullOrWhiteSpace($rawAt)) {
+                    $rawAt = [string](Get-TuhProp -Object $entry -Name "generatedAt" -DefaultValue "")
+                }
                 $at = [datetime]::MinValue
                 if (-not [datetime]::TryParse($rawAt, [ref]$at)) {
                     continue
