@@ -323,6 +323,22 @@ try {
         throw "config did not save context budget"
     }
 
+    $corruptData = Join-Path $work "corrupt-data"
+    New-Item -ItemType Directory -Force -Path $corruptData | Out-Null
+    "{ bad config" | Set-Content -LiteralPath (Join-Path $corruptData "config.json") -Encoding UTF8
+    "{ bad state" | Set-Content -LiteralPath (Join-Path $corruptData "state.json") -Encoding UTF8
+    $corruptStatus = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $scriptRoot "token-helper.ps1") status -ProjectPath $project -DataPath $corruptData -Json | ConvertFrom-Json
+    if ($null -eq $corruptStatus.config -or [int]$corruptStatus.config.contextBudgetChars -ne 12000) {
+        throw "corrupt config should fall back to normalized defaults"
+    }
+    if ($null -eq $corruptStatus.state -or [long]$corruptStatus.state.cumulativeUsageTokens -ne 0 -or [long]$corruptStatus.state.cumulativeSavedTokens -ne 0) {
+        throw "corrupt state should fall back to default counters"
+    }
+    $corruptRefresh = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $scriptRoot "token-helper.ps1") refresh -ProjectPath $project -DataPath $corruptData -ManualUsageTokens 11 -ManualSavedTokens 7 -Json | ConvertFrom-Json
+    if ([long]$corruptRefresh.state.cumulativeUsageTokens -ne 11 -or [long]$corruptRefresh.state.cumulativeSavedTokens -ne 7) {
+        throw "refresh should recover from corrupt config/state files"
+    }
+
     $budgetProject = Join-Path $work "budget-project"
     $budgetCodex = Join-Path $budgetProject ".codex"
     New-Item -ItemType Directory -Force -Path $budgetCodex | Out-Null
