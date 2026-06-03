@@ -693,6 +693,7 @@ function Clear-TuhRefreshProcess {
         try {
             if ($Kill -and -not $script:refreshProcess.HasExited) {
                 $script:refreshProcess.Kill()
+                [void]$script:refreshProcess.WaitForExit(2000)
             }
         }
         catch {

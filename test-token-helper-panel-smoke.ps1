@@ -19,6 +19,18 @@ function Get-PanelProcesses {
     })
 }
 
+function Get-RefreshProcesses {
+    param([string]$Needle)
+
+    return @(Get-CimInstance Win32_Process | Where-Object {
+        $_.ProcessId -ne $PID -and
+        $_.CommandLine -like "*token-helper.ps1*" -and
+        $_.CommandLine -like "* refresh *" -and
+        $_.CommandLine -like "*$Needle*" -and
+        $_.CommandLine -notlike "*Get-CimInstance*"
+    })
+}
+
 try {
     [PSCustomObject]@{
         outputTokens = 1000
@@ -85,6 +97,12 @@ try {
     $panelsAfterSecond = @(Get-PanelProcesses -Needle $project)
     if ($panelsAfterSecond.Count -ne 1) {
         throw "global mutex failed; expected one panel process after second launch, got $($panelsAfterSecond.Count)"
+    }
+    Stop-Process -Id $panelsAfterSecond[0].ProcessId -Force -ErrorAction SilentlyContinue
+    Start-Sleep -Milliseconds 800
+    $leftoverRefresh = @(Get-RefreshProcesses -Needle $project)
+    if ($leftoverRefresh.Count -ne 0) {
+        throw "panel close left refresh child processes: $($leftoverRefresh.Count)"
     }
 
     [PSCustomObject]@{
