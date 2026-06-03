@@ -7,6 +7,20 @@
 - Full release gate script: `test-token-saver-release.ps1`.
 - MVP guards for immediate, race-safe panel reset behavior.
 - Release gate checks for stale installed runtime files.
+- Release gate dependencies are included in installed runtimes.
+- Regression coverage for corrupt runtime data, transient missing usage data, locked history files, panel child-process cleanup, and uninstall preservation of user agent-rule files.
+
+### Changed
+
+- Panel reset now clears immediately and ignores refresh results that started before reset.
+- Panel duplicate-launch mutex is acquired before WinForms loads.
+- Release gate now reports structured JSON with failed and skipped counts.
+- Global history writes are best-effort and no longer fail context generation when the history file is locked.
+
+### Fixed
+
+- Prevented transient missing data from resetting usage baselines and creating false token deltas when data returns.
+- Ensured panel refresh child processes are waited on during cleanup.
 
 ## v0.1.0 - 2026-06-02
 

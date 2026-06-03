@@ -75,6 +75,12 @@ try {
     if ($readmeText -notmatch [regex]::Escape("test-token-saver-release.ps1")) {
         throw "README should document the full release gate"
     }
+    $changelogText = Get-Content -LiteralPath (Join-Path $scriptRoot "CHANGELOG.md") -Raw
+    foreach ($changelogGuard in @("corrupt runtime data", "transient missing usage data", "locked history files", "panel child-process cleanup", "structured JSON")) {
+        if ($changelogText -notmatch [regex]::Escape($changelogGuard)) {
+            throw "CHANGELOG should mention reliability work: $changelogGuard"
+        }
+    }
     if ($readmeText -notmatch [regex]::Escape("JSON summary")) {
         throw "README should explain release gate JSON summary output"
     }
