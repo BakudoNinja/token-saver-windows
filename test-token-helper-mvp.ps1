@@ -75,6 +75,16 @@ try {
     if ($readmeText -notmatch [regex]::Escape("test-token-saver-release.ps1")) {
         throw "README should document the full release gate"
     }
+    if ($readmeText -notmatch [regex]::Escape("JSON summary")) {
+        throw "README should explain release gate JSON summary output"
+    }
+    $releaseGatePath = Join-Path $scriptRoot "test-token-saver-release.ps1"
+    $releaseGateTextRaw = Get-Content -LiteralPath $releaseGatePath -Raw
+    foreach ($releaseGateText in @("releaseGateFailed", "failedCount", "skippedCount", "InjectFailureForSelfTest")) {
+        if ($releaseGateTextRaw -notmatch [regex]::Escape($releaseGateText)) {
+            throw "release gate should report failures as structured JSON: $releaseGateText"
+        }
+    }
     foreach ($panelResetGuard in @("function Invoke-TuhPanelReset", "Clear-TuhRefreshProcess -Kill `$true", "lastResetAtUtc", "settingsResetApplied")) {
         if ($panelText -notmatch [regex]::Escape($panelResetGuard)) {
             throw "panel reset should be immediate and race-safe: $panelResetGuard"

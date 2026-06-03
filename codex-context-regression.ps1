@@ -130,6 +130,27 @@ export function importantValue() {
             Assert-True (-not [bool]$file.cacheReference) "protected file must not use a stable cache reference: $($file.path)"
         }
     }
+
+    $lockedHistoryPath = Join-Path $fixture ".codex/locked-history.jsonl"
+    $lockStream = [System.IO.File]::Open($lockedHistoryPath, [System.IO.FileMode]::OpenOrCreate, [System.IO.FileAccess]::ReadWrite, [System.IO.FileShare]::None)
+    try {
+        $lockedContextPath = Join-Path $fixture ".codex/locked-context.md"
+        $lockedStatsPath = Join-Path $fixture ".codex/locked-stats.json"
+        & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $scriptRoot "codex-slim.ps1") `
+            -ProjectPath $fixture `
+            -OutputPath $lockedContextPath `
+            -StatsPath $lockedStatsPath `
+            -ContextCachePath (Join-Path $fixture ".codex/locked-cache.json") `
+            -GlobalHistoryPath $lockedHistoryPath `
+            -ConversationName "locked-history-regression" `
+            -RunKind refresh | Out-Null
+        Assert-True ($LASTEXITCODE -eq 0) "codex-slim should not fail when global history file is locked."
+        Assert-True (Test-Path -LiteralPath $lockedContextPath -PathType Leaf) "locked history run should still write context."
+        Assert-True (Test-Path -LiteralPath $lockedStatsPath -PathType Leaf) "locked history run should still write stats."
+    }
+    finally {
+        $lockStream.Dispose()
+    }
 }
 finally {
     if (-not $KeepFixture -and (Test-Path -LiteralPath $fixture)) {

@@ -23,6 +23,40 @@ function Get-TokenEstimate {
     return [int][Math]::Ceiling($Text.Length / 4.0)
 }
 
+function Add-HistoryLineBestEffort {
+    param(
+        [string]$Path,
+        [string]$Line,
+        [int]$Retries = 8,
+        [int]$DelayMilliseconds = 125
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Path)) {
+        return $true
+    }
+
+    $historyDir = Split-Path -Parent $Path
+    if (-not [string]::IsNullOrWhiteSpace($historyDir)) {
+        New-Item -ItemType Directory -Force -Path $historyDir | Out-Null
+    }
+
+    for ($attempt = 0; $attempt -le $Retries; $attempt++) {
+        try {
+            Add-Content -LiteralPath $Path -Value $Line -Encoding UTF8
+            return $true
+        }
+        catch [System.IO.IOException] {
+            if ($attempt -ge $Retries) {
+                Write-Warning ("Token saver history write skipped because the file is locked: {0}" -f $Path)
+                return $false
+            }
+            Start-Sleep -Milliseconds $DelayMilliseconds
+        }
+    }
+
+    return $false
+}
+
 function Resolve-ProjectPath {
     param([string]$Path)
     return (Get-Item -LiteralPath $Path).FullName
@@ -425,11 +459,7 @@ $historyEntry = [ordered]@{
     savedTokens = [long]$savedTokens
 }
 if (-not [string]::IsNullOrWhiteSpace($GlobalHistoryPath)) {
-    $historyDir = Split-Path -Parent $GlobalHistoryPath
-    if (-not [string]::IsNullOrWhiteSpace($historyDir)) {
-        New-Item -ItemType Directory -Force -Path $historyDir | Out-Null
-    }
-    Add-Content -LiteralPath $GlobalHistoryPath -Value ($historyEntry | ConvertTo-Json -Compress -Depth 6) -Encoding UTF8
+    [void](Add-HistoryLineBestEffort -Path $GlobalHistoryPath -Line ($historyEntry | ConvertTo-Json -Compress -Depth 6))
 }
 
 Write-Host "Context: $OutputPath"

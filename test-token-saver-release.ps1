@@ -1,6 +1,7 @@
 param(
     [switch]$SkipPanelSmoke,
     [switch]$CloseExistingPanel,
+    [switch]$InjectFailureForSelfTest,
     [string]$InstallRoot = "",
     [string]$GlobalBinPath = "$env:USERPROFILE\.codex\bin"
 )
@@ -10,6 +11,7 @@ $ErrorActionPreference = "Stop"
 
 $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $results = New-Object System.Collections.Generic.List[object]
+$script:releaseGateFailed = $false
 
 function Add-ReleaseResult {
     param(
@@ -37,7 +39,7 @@ function Invoke-ReleaseStep {
     }
     catch {
         Add-ReleaseResult -Name $Name -Status "failed" -Detail $_.Exception.Message
-        throw
+        $script:releaseGateFailed = $true
     }
 }
 
@@ -119,6 +121,12 @@ Invoke-ReleaseStep -Name "context-regression" -Script {
     ("cacheHits={0}; cacheSavedTokens={1}; coverageRisk={2}" -f $result.cacheHits, $result.cacheSavedTokens, $result.coverageRisk)
 }
 
+if ($InjectFailureForSelfTest) {
+    Invoke-ReleaseStep -Name "self-test-failure" -Script {
+        throw "intentional release gate self-test failure"
+    }
+}
+
 $defaultInstallRoot = $InstallRoot
 if ([string]::IsNullOrWhiteSpace($defaultInstallRoot)) {
     $base = if ($env:LOCALAPPDATA) { $env:LOCALAPPDATA } else { Join-Path $env:USERPROFILE "AppData\Local" }
@@ -163,9 +171,11 @@ else {
 
 $failed = @($results.ToArray() | Where-Object { [string]$_.status -eq "failed" })
 $summary = [PSCustomObject]@{
-    ok = ($failed.Count -eq 0)
+    ok = (-not $script:releaseGateFailed -and $failed.Count -eq 0)
     testedAtUtc = (Get-Date).ToUniversalTime().ToString("o")
     resultCount = $results.Count
+    failedCount = $failed.Count
+    skippedCount = @($results.ToArray() | Where-Object { [string]$_.status -eq "skipped" }).Count
     results = @($results.ToArray())
 }
 
