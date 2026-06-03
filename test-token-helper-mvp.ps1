@@ -91,6 +91,26 @@ try {
             throw "release gate should report failures as structured JSON: $releaseGateText"
         }
     }
+    if ($releaseGateTextRaw -notmatch [regex]::Escape("SelfTestOnly")) {
+        throw "release gate should provide a non-recursive self-test mode"
+    }
+    $previousErrorActionPreference = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        $releaseSelfTestOutput = & powershell -NoProfile -ExecutionPolicy Bypass -File $releaseGatePath -SelfTestOnly 2>&1
+        $releaseSelfTestExitCode = $LASTEXITCODE
+    }
+    finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+    }
+    if ($releaseSelfTestExitCode -eq 0) {
+        throw "release gate self-test should exit nonzero"
+    }
+    $releaseSelfTestJson = ($releaseSelfTestOutput | ForEach-Object { [string]$_ }) -join [Environment]::NewLine
+    $releaseSelfTest = $releaseSelfTestJson | ConvertFrom-Json
+    if ([bool]$releaseSelfTest.ok -or [int]$releaseSelfTest.failedCount -ne 1 -or [string]$releaseSelfTest.results[0].status -ne "failed") {
+        throw "release gate self-test should return structured failed JSON"
+    }
     foreach ($panelResetGuard in @("function Invoke-TuhPanelReset", "Clear-TuhRefreshProcess -Kill `$true", "lastResetAtUtc", "settingsResetApplied")) {
         if ($panelText -notmatch [regex]::Escape($panelResetGuard)) {
             throw "panel reset should be immediate and race-safe: $panelResetGuard"

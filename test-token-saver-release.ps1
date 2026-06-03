@@ -2,6 +2,7 @@ param(
     [switch]$SkipPanelSmoke,
     [switch]$CloseExistingPanel,
     [switch]$InjectFailureForSelfTest,
+    [switch]$SelfTestOnly,
     [string]$InstallRoot = "",
     [string]$GlobalBinPath = "$env:USERPROFILE\.codex\bin"
 )
@@ -40,6 +41,23 @@ function Invoke-ReleaseStep {
     catch {
         Add-ReleaseResult -Name $Name -Status "failed" -Detail $_.Exception.Message
         $script:releaseGateFailed = $true
+    }
+}
+
+function Complete-ReleaseGate {
+    $failed = @($results.ToArray() | Where-Object { [string]$_.status -eq "failed" })
+    $summary = [PSCustomObject]@{
+        ok = (-not $script:releaseGateFailed -and $failed.Count -eq 0)
+        testedAtUtc = (Get-Date).ToUniversalTime().ToString("o")
+        resultCount = $results.Count
+        failedCount = $failed.Count
+        skippedCount = @($results.ToArray() | Where-Object { [string]$_.status -eq "skipped" }).Count
+        results = @($results.ToArray())
+    }
+
+    $summary | ConvertTo-Json -Depth 6
+    if (-not [bool]$summary.ok) {
+        exit 1
     }
 }
 
@@ -99,6 +117,13 @@ function Test-InstalledRuntimeConsistency {
         throw ("{0} runtime is stale: {1}" -f $Name, ($mismatches -join "; "))
     }
     return "runtime files match source"
+}
+
+if ($SelfTestOnly) {
+    Invoke-ReleaseStep -Name "self-test-failure" -Script {
+        throw "intentional release gate self-test failure"
+    }
+    Complete-ReleaseGate
 }
 
 Invoke-ReleaseStep -Name "powershell-parse" -Script {
@@ -180,17 +205,4 @@ else {
     }
 }
 
-$failed = @($results.ToArray() | Where-Object { [string]$_.status -eq "failed" })
-$summary = [PSCustomObject]@{
-    ok = (-not $script:releaseGateFailed -and $failed.Count -eq 0)
-    testedAtUtc = (Get-Date).ToUniversalTime().ToString("o")
-    resultCount = $results.Count
-    failedCount = $failed.Count
-    skippedCount = @($results.ToArray() | Where-Object { [string]$_.status -eq "skipped" }).Count
-    results = @($results.ToArray())
-}
-
-$summary | ConvertTo-Json -Depth 6
-if (-not [bool]$summary.ok) {
-    exit 1
-}
+Complete-ReleaseGate

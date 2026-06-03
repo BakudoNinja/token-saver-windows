@@ -11,6 +11,7 @@
 - Regression coverage for corrupt runtime data, transient missing usage data, locked history files, panel child-process cleanup, and uninstall preservation of user agent-rule files.
 - Regression coverage for uninstall keep-flags that preserve agent rules and auto-attached project data while removing the installed runtime.
 - Regression coverage for Codex session `token_count` parsing so live usage does not silently drop to zero.
+- Release gate self-test mode verifies structured failure JSON and nonzero exits without recursively running the full gate.
 
 ### Changed
 
